@@ -13,3 +13,5 @@ Zasady pracy:
 - Nie zmieniaj modelu danych ani reguł Firestore bez pytania.
 - Po każdym kroku opisz krótko, co zmieniłeś i jak to sprawdzić.
 - Odpowiadaj po polsku.
+
+@AGENTS.md
