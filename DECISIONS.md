@@ -8,3 +8,6 @@
 | 4 | Opcjonalna reguła sprawdzająca, czy isCorrect zgadza się z correctIndex pytania | Włączyłem | Bez niej uczeń mógłby przez konsolę przeglądarki zapisać fałszywe poprawne odpowiedzi i zawyżyć metrykę |
 | 4 | Ponad plan: sprawdzanie zakresu selectedIndex w regułach i odrzucanie pytań z powtórzonymi odpowiedziami | Zaakceptowałem oba | Blokują zapis śmieciowych danych; agent zgłosił je otwarcie |
 | 4 | (przegląd) W podglądzie handleAnswer brakowało obsługi błędu zapisu (.catch) | Poprosiłem agenta o pełny fragment - .catch był, podgląd w terminalu był ucięty | Przy wątpliwości sprawdzam pełny plik, nie wklejkę z terminala |
+| 5 | Instalacja vitest@5 wymagała nowszego @types/node; agent odmówił obejścia flagą --force i dał dwie opcje | Wybrałem vitest@4.1.12 zamiast podnoszenia @types/node | W tym kroku zmieniamy tylko to, co konieczne; aktualizacja zależności to osobna decyzja |
+| 5 | Testy reguł w emulatorze na projekcie demo-fiszki | Przewidziałem wynik 6 przypadków z kodu reguł, potem kazałem celowo zepsuć regułę isCorrect | Test 8 nie przeszedł - testy naprawdę wykrywają błąd; reguła przywrócona |
+| 5 | (przegląd) Emulator zostawił plik firestore-debug.log na liście do commita | Dopisałem logi Firebase do .gitignore | Logi narzędzi nie należą do repozytorium; wyłapane przy porównaniu git status z planem |
