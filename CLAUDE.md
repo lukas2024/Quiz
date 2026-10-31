@@ -13,5 +13,6 @@ Zasady pracy:
 - Nie zmieniaj modelu danych ani reguł Firestore bez pytania.
 - Po każdym kroku opisz krótko, co zmieniłeś i jak to sprawdzić.
 - Odpowiadaj po polsku.
+- Gdy proszę o git status, pokaż tylko status. Nie dodawaj plików i nie rób commita, dopóki nie zaakceptuję listy.
 
 @AGENTS.md
