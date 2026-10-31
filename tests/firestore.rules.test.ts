@@ -13,6 +13,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   serverTimestamp,
   setDoc,
   Timestamp,
@@ -143,6 +144,18 @@ describe("users/{uid}/attempts – dostęp", () => {
     await assertFails(
       addDoc(collection(alice, `users/${BOB}/attempts`), attempt()),
     );
+  });
+});
+
+describe("users/{uid}/attempts – odczyt całej kolekcji (historia)", () => {
+  it("12. zalogowany pobiera swoją kolekcję attempts -> zgoda", async () => {
+    const alice = db(testEnv.authenticatedContext(ALICE));
+    await assertSucceeds(getDocs(collection(alice, `users/${ALICE}/attempts`)));
+  });
+
+  it("13. zalogowany pobiera cudzą kolekcję attempts -> odmowa", async () => {
+    const alice = db(testEnv.authenticatedContext(ALICE));
+    await assertFails(getDocs(collection(alice, `users/${BOB}/attempts`)));
   });
 });
 

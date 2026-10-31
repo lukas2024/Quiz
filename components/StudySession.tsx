@@ -4,32 +4,51 @@ import { useState } from "react";
 import type { AnswerRecord, Question } from "@/types/question";
 import QuestionCard from "@/components/QuestionCard";
 import SessionSummary from "@/components/SessionSummary";
+import {
+  createQueue,
+  enqueueRetry,
+  firstAttemptScore,
+  type SessionAnswer,
+  type SessionItem,
+} from "@/lib/review";
 
 type StudySessionProps = {
+  /** Pytania w kolejności, w jakiej mają się pojawić w tej sesji. */
   questions: Question[];
   onAnswer?: (record: AnswerRecord) => void;
+  /** Gdy podane, rodzic przygotowuje nową sesję (np. nową kolejność). */
+  onRestart?: () => void;
 };
 
 export default function StudySession({
   questions,
   onAnswer,
+  onRestart,
 }: StudySessionProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [queue, setQueue] = useState<SessionItem[]>(() =>
+    createQueue(questions),
+  );
+  const [position, setPosition] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<AnswerRecord[]>([]);
+  const [answers, setAnswers] = useState<SessionAnswer[]>([]);
 
   if (questions.length === 0) {
     return <p className="text-zinc-500">Brak pytań</p>;
   }
 
-  if (currentIndex >= questions.length) {
-    const correctCount = answers.filter((answer) => answer.isCorrect).length;
+  if (position >= queue.length) {
+    const score = firstAttemptScore(answers, questions.length);
     return (
       <SessionSummary
-        correctCount={correctCount}
-        totalQuestions={questions.length}
+        correctCount={score.correct}
+        totalQuestions={score.total}
         onRestart={() => {
-          setCurrentIndex(0);
+          if (onRestart) {
+            onRestart();
+            return;
+          }
+          setQueue(createQueue(questions));
+          setPosition(0);
           setSelectedIndex(null);
           setAnswers([]);
         }}
@@ -37,33 +56,35 @@ export default function StudySession({
     );
   }
 
-  const question = questions[currentIndex];
+  const item = queue[position];
+  const { question } = item;
 
   function handleSelect(index: number) {
     if (selectedIndex !== null) return;
-    const record: AnswerRecord = {
-      questionId: question.id,
-      selectedIndex: index,
-      isCorrect: index === question.correctIndex,
-    };
+    const isCorrect = index === question.correctIndex;
     setSelectedIndex(index);
-    setAnswers((prev) => [...prev, record]);
-    onAnswer?.(record);
+    setAnswers((prev) => [
+      ...prev,
+      { questionId: question.id, isCorrect, isRepeat: item.isRepeat },
+    ]);
+    setQueue((prev) => enqueueRetry(prev, item, isCorrect));
+    onAnswer?.({ questionId: question.id, selectedIndex: index, isCorrect });
   }
 
   function handleNext() {
     setSelectedIndex(null);
-    setCurrentIndex((prev) => prev + 1);
+    setPosition((prev) => prev + 1);
   }
 
   return (
     <QuestionCard
-      key={question.id}
+      key={position}
       question={question}
-      questionNumber={currentIndex + 1}
-      totalQuestions={questions.length}
+      questionNumber={position + 1}
+      totalQuestions={queue.length}
+      isRepeat={item.isRepeat}
       selectedIndex={selectedIndex}
-      isLast={currentIndex === questions.length - 1}
+      isLast={position === queue.length - 1}
       onSelect={handleSelect}
       onNext={handleNext}
     />

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:unit": "vitest run tests/unit",
     "test:rules": "firebase emulators:exec --only firestore --project demo-fiszki \"vitest run tests/firestore.rules.test.ts\""
   },
   "dependencies": {

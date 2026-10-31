@@ -4,6 +4,7 @@ type QuestionCardProps = {
   question: Question;
   questionNumber: number;
   totalQuestions: number;
+  isRepeat?: boolean;
   selectedIndex: number | null;
   isLast: boolean;
   onSelect: (index: number) => void;
@@ -14,6 +15,7 @@ export default function QuestionCard({
   question,
   questionNumber,
   totalQuestions,
+  isRepeat = false,
   selectedIndex,
   isLast,
   onSelect,
@@ -41,6 +43,12 @@ export default function QuestionCard({
     <section className="flex w-full max-w-xl flex-col gap-4">
       <p className="text-sm text-zinc-500">
         {question.subject} · Pytanie {questionNumber} z {totalQuestions}
+        {isRepeat && (
+          <span className="font-semibold text-amber-700 dark:text-amber-400">
+            {" "}
+            · Powtórka
+          </span>
+        )}
       </p>
       <h2 className="text-xl font-semibold">{question.text}</h2>
 

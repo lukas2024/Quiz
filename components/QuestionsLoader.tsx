@@ -4,14 +4,25 @@ import { useCallback, useEffect, useState } from "react";
 import { FirebaseError } from "firebase/app";
 import { useAuth } from "@/components/AuthProvider";
 import StudySession from "@/components/StudySession";
-import { saveAttempt } from "@/lib/attempts";
+import { fetchAttempts, saveAttempt } from "@/lib/attempts";
 import { fetchQuestions } from "@/lib/questions";
+import { orderQuestionsForSession, type AttemptSummary } from "@/lib/review";
 import type { AnswerRecord, Question } from "@/types/question";
 
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; questions: Question[] };
+  | { status: "ready"; questions: Question[]; historyFailed: boolean };
+
+/** Historia odpowiedzi albo null, gdy odczyt się nie udał. */
+async function fetchHistory(uid: string | null): Promise<AttemptSummary[] | null> {
+  if (!uid) return [];
+  try {
+    return await fetchAttempts(uid);
+  } catch {
+    return null;
+  }
+}
 
 // Tylko własne komunikaty i kod błędu, nigdy error.message.
 function errorCode(error: unknown): string | null {
@@ -47,11 +58,20 @@ export default function QuestionsLoader() {
   const [reloadKey, setReloadKey] = useState(0);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Każda sesja (także po „Zacznij od nowa”) pobiera pytania i świeżą historię,
+  // żeby błędy z poprzedniej sesji trafiły na początek.
   useEffect(() => {
     let cancelled = false;
-    fetchQuestions()
-      .then((questions) => {
-        if (!cancelled) setLoadState({ status: "ready", questions });
+    Promise.all([fetchQuestions(), fetchHistory(uid)])
+      .then(([questions, history]) => {
+        if (cancelled) return;
+        setLoadState({
+          status: "ready",
+          questions: history
+            ? orderQuestionsForSession(questions, history)
+            : questions,
+          historyFailed: history === null,
+        });
       })
       .catch((error: unknown) => {
         if (!cancelled) {
@@ -61,7 +81,7 @@ export default function QuestionsLoader() {
     return () => {
       cancelled = true;
     };
-  }, [reloadKey]);
+  }, [reloadKey, uid]);
 
   // Zapis idzie w tle: addDoc kończy się dopiero po potwierdzeniu serwera,
   // więc nie blokujemy na nim nauki.
@@ -75,8 +95,10 @@ export default function QuestionsLoader() {
     [uid],
   );
 
-  function retry() {
+  // Ponowna próba po błędzie i nowa sesja działają tak samo: wczytaj od nowa.
+  function reload() {
     setLoadState({ status: "loading" });
+    setSaveError(null);
     setReloadKey((key) => key + 1);
   }
 
@@ -93,7 +115,7 @@ export default function QuestionsLoader() {
           <button
             type="button"
             className="rounded-lg bg-zinc-900 px-5 py-2 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-            onClick={retry}
+            onClick={reload}
           >
             Spróbuj ponownie
           </button>
@@ -103,14 +125,22 @@ export default function QuestionsLoader() {
     case "ready":
       return (
         <div className="flex w-full flex-col items-center gap-4">
+          {loadState.historyFailed && (
+            <p role="status" className="text-sm text-amber-700 dark:text-amber-400">
+              Nie udało się wczytać historii odpowiedzi – pytania w zwykłej
+              kolejności.
+            </p>
+          )}
           {saveError && (
             <p role="alert" className="text-sm text-red-700 dark:text-red-400">
               {saveError}
             </p>
           )}
           <StudySession
+            key={reloadKey}
             questions={loadState.questions}
             onAnswer={handleAnswer}
+            onRestart={reload}
           />
         </div>
       );
