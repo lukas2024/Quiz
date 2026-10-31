@@ -63,7 +63,7 @@ export default function ProgressView() {
 
   switch (loadState.status) {
     case "loading":
-      return <p className="text-zinc-500">Ładowanie postępów…</p>;
+      return <p className="text-zinc-500 dark:text-zinc-400">Ładowanie postępów…</p>;
 
     case "error":
       return (
@@ -85,9 +85,15 @@ export default function ProgressView() {
       const { stats } = loadState;
       const rate = formatRetryRate(stats);
       return (
-        <dl className="grid w-full max-w-xl grid-cols-[1fr_auto] gap-x-6 gap-y-4">
+        <dl className="grid w-full grid-cols-[1fr_auto] gap-x-6 gap-y-4">
           <dt className="font-semibold">Skuteczność powtórek</dt>
-          <dd className={rate ? "text-right text-2xl font-bold" : "text-right text-sm text-zinc-500"}>
+          <dd
+            className={
+              rate
+                ? "text-right text-2xl font-bold"
+                : "text-right text-sm text-zinc-500 dark:text-zinc-400"
+            }
+          >
             {rate ?? "Za mało danych - odpowiedz jeszcze raz na pytania z błędem"}
           </dd>
 

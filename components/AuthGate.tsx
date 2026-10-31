@@ -1,27 +1,36 @@
 "use client";
 
 import type { ReactNode } from "react";
+import AppHeader from "@/components/AppHeader";
 import { useAuth } from "@/components/AuthProvider";
 import LoginScreen from "@/components/LoginScreen";
+
+function CenteredMessage({ children }: { children: ReactNode }) {
+  return (
+    <main className="flex flex-1 items-center justify-center px-4">
+      {children}
+    </main>
+  );
+}
 
 export default function AuthGate({ children }: { children: ReactNode }) {
   const { state, actionError, signIn, signOut } = useAuth();
 
-  const errorMessage = actionError && (
-    <p role="alert" className="text-red-700 dark:text-red-400">
-      {actionError}
-    </p>
-  );
-
   switch (state.status) {
     case "loading":
-      return <p className="text-zinc-500">Ładowanie…</p>;
+      return (
+        <CenteredMessage>
+          <p className="text-zinc-500 dark:text-zinc-400">Ładowanie…</p>
+        </CenteredMessage>
+      );
 
     case "error":
       return (
-        <p role="alert" className="text-red-700 dark:text-red-400">
-          {state.message}
-        </p>
+        <CenteredMessage>
+          <p role="alert" className="text-red-700 dark:text-red-400">
+            {state.message}
+          </p>
+        </CenteredMessage>
       );
 
     case "signed-out":
@@ -34,25 +43,20 @@ export default function AuthGate({ children }: { children: ReactNode }) {
 
     case "signed-in":
       return (
-        <div className="flex w-full flex-col items-center gap-8">
-          <div className="flex w-full max-w-xl items-center justify-between gap-4 border-b border-zinc-200 pb-3 dark:border-zinc-800">
-            <p className="text-sm">
-              Zalogowano jako{" "}
-              <span className="font-semibold">
-                {state.user.displayName ?? state.user.email ?? "uczeń"}
-              </span>
-            </p>
-            <button
-              type="button"
-              className="text-sm underline hover:no-underline"
-              onClick={() => void signOut()}
-            >
-              Wyloguj
-            </button>
-          </div>
-          {errorMessage}
-          {children}
-        </div>
+        <>
+          <AppHeader
+            userName={state.user.displayName ?? state.user.email ?? "uczeń"}
+            onSignOut={() => void signOut()}
+          />
+          <main className="mx-auto flex w-full max-w-[640px] flex-1 flex-col gap-4 px-4 py-4 sm:py-8">
+            {actionError && (
+              <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+                {actionError}
+              </p>
+            )}
+            {children}
+          </main>
+        </>
       );
   }
 }

@@ -104,7 +104,7 @@ export default function QuestionsLoader() {
 
   switch (loadState.status) {
     case "loading":
-      return <p className="text-zinc-500">Ładowanie pytań…</p>;
+      return <p className="text-zinc-500 dark:text-zinc-400">Ładowanie pytań…</p>;
 
     case "error":
       return (
@@ -124,7 +124,7 @@ export default function QuestionsLoader() {
 
     case "ready":
       return (
-        <div className="flex w-full flex-col items-center gap-4">
+        <div className="flex w-full flex-col gap-4">
           {loadState.historyFailed && (
             <p role="status" className="text-sm text-amber-700 dark:text-amber-400">
               Nie udało się wczytać historii odpowiedzi – pytania w zwykłej

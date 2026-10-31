@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect } from "react";
 import type { Question } from "@/types/question";
 
 type QuestionCardProps = {
@@ -11,6 +14,20 @@ type QuestionCardProps = {
   onNext: () => void;
 };
 
+const letter = (index: number) => String.fromCharCode(65 + index);
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+  );
+}
+
+function isClickableTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && target.closest("button, a") !== null;
+}
+
 export default function QuestionCard({
   question,
   questionNumber,
@@ -23,10 +40,38 @@ export default function QuestionCard({
 }: QuestionCardProps) {
   const answered = selectedIndex !== null;
   const isCorrect = selectedIndex === question.correctIndex;
+  const shortcutCount = Math.min(question.options.length, 9);
+
+  // Skróty: 1–n wybiera odpowiedź, Enter przechodzi dalej.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+      if (isTypingTarget(event.target)) return;
+
+      if (!answered && /^[1-9]$/.test(event.key)) {
+        const index = Number(event.key) - 1;
+        if (index < shortcutCount) {
+          event.preventDefault();
+          onSelect(index);
+        }
+        return;
+      }
+
+      // Enter na przycisku w fokusie obsługuje sama przeglądarka (kliknięcie);
+      // inaczej jedno naciśnięcie przeszłoby o dwa pytania.
+      if (answered && event.key === "Enter" && !isClickableTarget(event.target)) {
+        event.preventDefault();
+        onNext();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [answered, shortcutCount, onSelect, onNext]);
 
   function optionClass(index: number): string {
     const base =
-      "w-full rounded-lg border px-4 py-3 text-left transition-colors disabled:cursor-default";
+      "flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors disabled:cursor-default sm:px-4 sm:py-3";
     if (!answered) {
       return `${base} border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800`;
     }
@@ -39,18 +84,40 @@ export default function QuestionCard({
     return `${base} border-zinc-300 opacity-60 dark:border-zinc-700`;
   }
 
+  const progressPercent = Math.round((questionNumber / totalQuestions) * 100);
+
   return (
-    <section className="flex w-full max-w-xl flex-col gap-4">
-      <p className="text-sm text-zinc-500">
-        {question.subject} · Pytanie {questionNumber} z {totalQuestions}
-        {isRepeat && (
-          <span className="font-semibold text-amber-700 dark:text-amber-400">
-            {" "}
-            · Powtórka
+    <section className="flex w-full flex-col gap-3 sm:gap-4">
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-baseline justify-between text-sm text-zinc-500 dark:text-zinc-400">
+          <span>
+            {questionNumber} z {totalQuestions}
           </span>
-        )}
+          {isRepeat && (
+            <span className="font-semibold text-amber-700 dark:text-amber-400">
+              Powtórka
+            </span>
+          )}
+        </div>
+        <div
+          role="progressbar"
+          aria-label="Postęp sesji"
+          aria-valuemin={0}
+          aria-valuemax={totalQuestions}
+          aria-valuenow={questionNumber}
+          className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
+        >
+          <div
+            className="h-full rounded-full bg-zinc-900 transition-[width] dark:bg-zinc-100"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+        {question.subject}
       </p>
-      <h2 className="text-xl font-semibold">{question.text}</h2>
+      <h2 className="text-lg font-semibold sm:text-xl">{question.text}</h2>
 
       <ul className="flex flex-col gap-2">
         {question.options.map((option, index) => (
@@ -61,11 +128,21 @@ export default function QuestionCard({
               disabled={answered}
               onClick={() => onSelect(index)}
             >
-              {option}
+              <span
+                aria-hidden="true"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-current text-sm font-semibold"
+              >
+                {letter(index)}
+              </span>
+              <span>{option}</span>
             </button>
           </li>
         ))}
       </ul>
+
+      <p className="hidden text-xs text-zinc-500 sm:block dark:text-zinc-400">
+        Skróty: 1–{shortcutCount} wybór odpowiedzi, Enter – dalej
+      </p>
 
       {answered && (
         <div className="flex flex-col gap-3">
@@ -75,7 +152,7 @@ export default function QuestionCard({
           >
             {isCorrect
               ? "Dobrze!"
-              : `Źle, poprawna odpowiedź to: ${question.options[question.correctIndex]}`}
+              : `Źle, poprawna odpowiedź to: ${letter(question.correctIndex)}. ${question.options[question.correctIndex]}`}
           </p>
           <button
             type="button"

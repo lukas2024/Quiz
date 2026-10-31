@@ -33,7 +33,7 @@ export default function StudySession({
   const [answers, setAnswers] = useState<SessionAnswer[]>([]);
 
   if (questions.length === 0) {
-    return <p className="text-zinc-500">Brak pytań</p>;
+    return <p className="text-zinc-500 dark:text-zinc-400">Brak pytań</p>;
   }
 
   if (position >= queue.length) {
