@@ -2,9 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useAuth } from "@/components/AuthProvider";
-
-const buttonClass =
-  "rounded-lg bg-zinc-900 px-5 py-2 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300";
+import LoginScreen from "@/components/LoginScreen";
 
 export default function AuthGate({ children }: { children: ReactNode }) {
   const { state, actionError, signIn, signOut } = useAuth();
@@ -28,12 +26,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
 
     case "signed-out":
       return (
-        <div className="flex flex-col items-center gap-3">
-          <button type="button" className={buttonClass} onClick={() => void signIn()}>
-            Zaloguj przez Google
-          </button>
-          {errorMessage}
-        </div>
+        <LoginScreen
+          onSignIn={() => void signIn()}
+          errorMessage={actionError}
+        />
       );
 
     case "signed-in":
