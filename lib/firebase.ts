@@ -1,10 +1,12 @@
 import {
+  type FirebaseApp,
   type FirebaseOptions,
   getApp,
   getApps,
   initializeApp,
 } from "firebase/app";
 import { type Auth, getAuth } from "firebase/auth";
+import { type Firestore, getFirestore } from "firebase/firestore";
 
 // Next.js podmienia process.env.NEXT_PUBLIC_* tylko przy odczycie wprost,
 // dlatego każda zmienna jest wypisana jawnie (bez process.env[name]).
@@ -36,12 +38,23 @@ function toFirebaseOptions(): FirebaseOptions {
   };
 }
 
+/** Inicjalizuje Firebase leniwie, przy pierwszym wywołaniu w przeglądarce. */
+function getFirebaseApp(): FirebaseApp {
+  return getApps().length > 0 ? getApp() : initializeApp(toFirebaseOptions());
+}
+
 let auth: Auth | null = null;
 
-/** Inicjalizuje Firebase leniwie, przy pierwszym wywołaniu w przeglądarce. */
 export function getFirebaseAuth(): Auth {
   if (auth) return auth;
-  const app = getApps().length > 0 ? getApp() : initializeApp(toFirebaseOptions());
-  auth = getAuth(app);
+  auth = getAuth(getFirebaseApp());
   return auth;
+}
+
+let db: Firestore | null = null;
+
+export function getFirebaseDb(): Firestore {
+  if (db) return db;
+  db = getFirestore(getFirebaseApp());
+  return db;
 }

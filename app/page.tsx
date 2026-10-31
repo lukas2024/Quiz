@@ -1,7 +1,6 @@
 import AuthGate from "@/components/AuthGate";
 import AuthProvider from "@/components/AuthProvider";
-import StudySession from "@/components/StudySession";
-import { questions } from "@/data/questions";
+import QuestionsLoader from "@/components/QuestionsLoader";
 
 export default function Home() {
   return (
@@ -9,7 +8,7 @@ export default function Home() {
       <h1 className="text-4xl font-bold">Fiszki</h1>
       <AuthProvider>
         <AuthGate>
-          <StudySession questions={questions} />
+          <QuestionsLoader />
         </AuthGate>
       </AuthProvider>
     </main>

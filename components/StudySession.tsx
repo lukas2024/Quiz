@@ -7,9 +7,13 @@ import SessionSummary from "@/components/SessionSummary";
 
 type StudySessionProps = {
   questions: Question[];
+  onAnswer?: (record: AnswerRecord) => void;
 };
 
-export default function StudySession({ questions }: StudySessionProps) {
+export default function StudySession({
+  questions,
+  onAnswer,
+}: StudySessionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
@@ -37,15 +41,14 @@ export default function StudySession({ questions }: StudySessionProps) {
 
   function handleSelect(index: number) {
     if (selectedIndex !== null) return;
+    const record: AnswerRecord = {
+      questionId: question.id,
+      selectedIndex: index,
+      isCorrect: index === question.correctIndex,
+    };
     setSelectedIndex(index);
-    setAnswers((prev) => [
-      ...prev,
-      {
-        questionId: question.id,
-        selectedIndex: index,
-        isCorrect: index === question.correctIndex,
-      },
-    ]);
+    setAnswers((prev) => [...prev, record]);
+    onAnswer?.(record);
   }
 
   function handleNext() {

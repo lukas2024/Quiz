@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Odpowiedź musi mieć dokładnie 4 pola o właściwych typach,
+    // selectedIndex w zakresie odpowiedzi pytania,
+    // isCorrect zgodne z correctIndex pytania
+    // i createdAt równe czasowi serwera.
+    function isValidAttempt(data) {
+      let question = get(/databases/$(database)/documents/questions/$(data.questionId)).data;
+      return data.keys().hasOnly(['questionId', 'selectedIndex', 'isCorrect', 'createdAt'])
+        && data.keys().hasAll(['questionId', 'selectedIndex', 'isCorrect', 'createdAt'])
+        && data.questionId is string
+        && data.selectedIndex is int
+        && data.selectedIndex >= 0
+        && data.selectedIndex < question.options.size()
+        && data.isCorrect is bool
+        && data.isCorrect == (data.selectedIndex == question.correctIndex)
+        && data.createdAt == request.time;
+    }
+
+    // Pytania: czyta każdy zalogowany, nikt nie zapisuje z aplikacji.
+    match /questions/{questionId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Odpowiedzi ucznia: tylko właściciel, tylko dodawanie.
+    match /users/{uid}/attempts/{attemptId} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && isValidAttempt(request.resource.data);
+      allow update, delete: if false;
+    }
+  }
+}
