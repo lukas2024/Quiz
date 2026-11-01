@@ -77,11 +77,12 @@ export default function QuestionCard({
     if (!answered) {
       return `${base} border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800`;
     }
-    if (index === question.correctIndex) {
-      return `${base} border-green-600 bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-100`;
-    }
+    // Wyróżniamy tylko klikniętą opcję. Po błędzie poprawna opcja wygląda
+    // jak pozostałe, żeby powtórka nie była klikaniem zapamiętanej podpowiedzi.
     if (index === selectedIndex) {
-      return `${base} border-red-600 bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100`;
+      return isCorrect
+        ? `${base} border-green-600 bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-100`
+        : `${base} border-red-600 bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100`;
     }
     return `${base} border-zinc-300 opacity-60 dark:border-zinc-700`;
   }
@@ -145,7 +146,15 @@ export default function QuestionCard({
               >
                 {letter(index)}
               </span>
-              <span>{option}</span>
+              <span className="flex-1">{option}</span>
+              {index === selectedIndex && (
+                <span className="shrink-0 text-lg font-bold leading-none">
+                  <span aria-hidden="true">{isCorrect ? "✓" : "✗"}</span>
+                  <span className="sr-only">
+                    {isCorrect ? " – poprawna odpowiedź" : " – błędna odpowiedź"}
+                  </span>
+                </span>
+              )}
             </button>
           </li>
         ))}
@@ -161,9 +170,7 @@ export default function QuestionCard({
             role="status"
             className={isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}
           >
-            {isCorrect
-              ? "Dobrze!"
-              : `Źle, poprawna odpowiedź to: ${letter(question.correctIndex)}. ${question.options[question.correctIndex]}`}
+            {isCorrect ? "Dobrze!" : "Źle – to pytanie wróci na końcu sesji"}
           </p>
           <button
             type="button"
