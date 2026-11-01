@@ -13,7 +13,10 @@ export type AttemptSummary = {
 /** Pozycja w kolejce bieżącej sesji. */
 export type SessionItem = {
   question: Question;
+  /** Powtórka w tej samej sesji po błędzie przy pierwszym podejściu. */
   isRepeat: boolean;
+  /** Ostatnia odpowiedź z historii (poprzednie sesje) była błędna. */
+  dueFromHistory: boolean;
 };
 
 /** Odpowiedź udzielona w bieżącej sesji. */
@@ -24,15 +27,13 @@ export type SessionAnswer = {
 };
 
 /**
- * Następna sesja: pytania, których OSTATNIA odpowiedź była błędna, idą na
- * początek; reszta po nich. Obie grupy zachowują kolejność wejściową.
+ * ID pytań, na które OSTATNIA odpowiedź w historii była błędna.
  * Ostatnia = największe createdAtMs (kolejność w tablicy nie ma znaczenia).
  * Remis czasu: wygrywa odpowiedź błędna.
  */
-export function orderQuestionsForSession(
-  questions: readonly Question[],
+export function findLastWrongIds(
   attempts: readonly AttemptSummary[],
-): Question[] {
+): Set<string> {
   const latest = new Map<string, AttemptSummary>();
 
   for (const attempt of attempts) {
@@ -44,8 +45,23 @@ export function orderQuestionsForSession(
     if (isNewer) latest.set(attempt.questionId, attempt);
   }
 
-  const lastWrong = (question: Question) =>
-    latest.get(question.id)?.isCorrect === false;
+  const ids = new Set<string>();
+  for (const [questionId, attempt] of latest) {
+    if (!attempt.isCorrect) ids.add(questionId);
+  }
+  return ids;
+}
+
+/**
+ * Następna sesja: pytania z findLastWrongIds idą na początek; reszta po nich.
+ * Obie grupy zachowują kolejność wejściową.
+ */
+export function orderQuestionsForSession(
+  questions: readonly Question[],
+  attempts: readonly AttemptSummary[],
+): Question[] {
+  const lastWrongIds = findLastWrongIds(attempts);
+  const lastWrong = (question: Question) => lastWrongIds.has(question.id);
 
   return [
     ...questions.filter(lastWrong),
@@ -53,9 +69,19 @@ export function orderQuestionsForSession(
   ];
 }
 
-/** Ta sama sesja: kolejka startowa, każde pytanie jako pierwsze podejście. */
-export function createQueue(questions: readonly Question[]): SessionItem[] {
-  return questions.map((question) => ({ question, isRepeat: false }));
+/**
+ * Ta sama sesja: kolejka startowa, każde pytanie jako pierwsze podejście.
+ * dueIds (z findLastWrongIds) oznacza pytania do powtórki z poprzednich sesji.
+ */
+export function createQueue(
+  questions: readonly Question[],
+  dueIds: ReadonlySet<string> = new Set(),
+): SessionItem[] {
+  return questions.map((question) => ({
+    question,
+    isRepeat: false,
+    dueFromHistory: dueIds.has(question.id),
+  }));
 }
 
 /**
@@ -68,7 +94,10 @@ export function enqueueRetry(
   isCorrect: boolean,
 ): SessionItem[] {
   if (isCorrect || current.isRepeat) return [...queue];
-  return [...queue, { question: current.question, isRepeat: true }];
+  return [
+    ...queue,
+    { question: current.question, isRepeat: true, dueFromHistory: false },
+  ];
 }
 
 /** Wynik sesji liczony tylko z pierwszych podejść; total = liczba pytań. */

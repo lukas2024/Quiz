@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createQueue,
   enqueueRetry,
+  findLastWrongIds,
   firstAttemptScore,
   orderQuestionsForSession,
   type AttemptSummary,
@@ -110,7 +111,11 @@ describe("enqueueRetry", () => {
     const result = enqueueRetry(queue, queue[1], false);
 
     expect(result).toHaveLength(6);
-    expect(result[5]).toEqual({ question: QUESTIONS[1], isRepeat: true });
+    expect(result[5]).toEqual({
+      question: QUESTIONS[1],
+      isRepeat: true,
+      dueFromHistory: false,
+    });
     expect(result.slice(0, 5)).toEqual(queue);
   });
 
@@ -167,5 +172,73 @@ describe("firstAttemptScore", () => {
       correct: 4,
       total: 5,
     });
+  });
+});
+
+describe("findLastWrongIds (do powtórki z poprzedniej sesji)", () => {
+  const sorted = (set: Set<string>) => [...set].sort();
+
+  it("17. brak prób -> pusty zbiór", () => {
+    expect(findLastWrongIds([]).size).toBe(0);
+  });
+
+  it("18. ostatnia odpowiedź błędna -> ID w zbiorze, poprawna -> nie", () => {
+    const attempts = [attempt("hp-3", false, T10), attempt("hp-1", true, T10)];
+    expect(sorted(findLastWrongIds(attempts))).toEqual(["hp-3"]);
+  });
+
+  it("19. błędna o 10:00, poprawna o 11:00 -> ID nie ma", () => {
+    const attempts = [attempt("hp-3", false, T10), attempt("hp-3", true, T11)];
+    expect(findLastWrongIds(attempts).has("hp-3")).toBe(false);
+  });
+
+  it("20. poprawna o 10:00, błędna o 11:00 (odwrotnie w tablicy) -> ID jest", () => {
+    const attempts = [attempt("hp-3", false, T11), attempt("hp-3", true, T10)];
+    expect(findLastWrongIds(attempts).has("hp-3")).toBe(true);
+  });
+
+  it("21. remis czasu -> wygrywa błędna, w obu kolejnościach", () => {
+    const correctFirst = [attempt("hp-2", true, T10), attempt("hp-2", false, T10)];
+    const wrongFirst = [attempt("hp-2", false, T10), attempt("hp-2", true, T10)];
+    expect(findLastWrongIds(correctFirst).has("hp-2")).toBe(true);
+    expect(findLastWrongIds(wrongFirst).has("hp-2")).toBe(true);
+  });
+
+  it("22. zgodność z orderQuestionsForSession: zbiór = początek kolejności", () => {
+    const attempts = [
+      attempt("hp-4", false, T10),
+      attempt("hp-2", false, T10),
+      attempt("hp-2", true, T11),
+      attempt("hp-5", true, T10),
+      attempt("hp-5", false, T11),
+    ];
+    const due = findLastWrongIds(attempts);
+    const ordered = ids(orderQuestionsForSession(QUESTIONS, attempts));
+
+    expect(sorted(due)).toEqual(["hp-4", "hp-5"]);
+    expect(ordered.slice(0, due.size).sort()).toEqual(sorted(due));
+    expect(ordered.slice(due.size).some((id) => due.has(id))).toBe(false);
+  });
+});
+
+describe("createQueue i enqueueRetry z dueFromHistory", () => {
+  it("23. createQueue oznacza tylko pytania z dueIds; bez dueIds żadnego", () => {
+    const queue = createQueue(QUESTIONS, new Set(["hp-2", "hp-4"]));
+    expect(
+      queue.filter((item) => item.dueFromHistory).map((item) => item.question.id),
+    ).toEqual(["hp-2", "hp-4"]);
+    expect(queue.every((item) => !item.isRepeat)).toBe(true);
+    expect(createQueue(QUESTIONS).some((item) => item.dueFromHistory)).toBe(false);
+  });
+
+  it("24. błąd w pytaniu z poprzedniej sesji -> powtórka w sesji, nie 'do powtórki'", () => {
+    const queue = createQueue(QUESTIONS, new Set(["hp-2"]));
+    const result = enqueueRetry(queue, queue[1], false);
+    expect(result[5]).toEqual({
+      question: QUESTIONS[1],
+      isRepeat: true,
+      dueFromHistory: false,
+    });
+    expect(result[1].dueFromHistory).toBe(true);
   });
 });

@@ -45,7 +45,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       return (
         <>
           <AppHeader
-            userName={state.user.displayName ?? state.user.email ?? "uczeń"}
+            userName={state.user.displayName ?? state.user.email ?? "Twoje konto"}
             onSignOut={() => void signOut()}
           />
           <main className="mx-auto flex w-full max-w-[640px] flex-1 flex-col gap-4 px-4 py-4 sm:py-8">

@@ -15,6 +15,8 @@ import {
 type StudySessionProps = {
   /** Pytania w kolejności, w jakiej mają się pojawić w tej sesji. */
   questions: Question[];
+  /** Pytania do powtórki z poprzednich sesji (findLastWrongIds). */
+  dueIds?: ReadonlySet<string>;
   onAnswer?: (record: AnswerRecord) => void;
   /** Gdy podane, rodzic przygotowuje nową sesję (np. nową kolejność). */
   onRestart?: () => void;
@@ -22,11 +24,12 @@ type StudySessionProps = {
 
 export default function StudySession({
   questions,
+  dueIds,
   onAnswer,
   onRestart,
 }: StudySessionProps) {
   const [queue, setQueue] = useState<SessionItem[]>(() =>
-    createQueue(questions),
+    createQueue(questions, dueIds),
   );
   const [position, setPosition] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -47,7 +50,7 @@ export default function StudySession({
             onRestart();
             return;
           }
-          setQueue(createQueue(questions));
+          setQueue(createQueue(questions, dueIds));
           setPosition(0);
           setSelectedIndex(null);
           setAnswers([]);
@@ -83,6 +86,7 @@ export default function StudySession({
       questionNumber={position + 1}
       totalQuestions={queue.length}
       isRepeat={item.isRepeat}
+      dueFromHistory={item.dueFromHistory}
       selectedIndex={selectedIndex}
       isLast={position === queue.length - 1}
       onSelect={handleSelect}

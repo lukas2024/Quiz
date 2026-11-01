@@ -26,7 +26,7 @@ function byTime(a: AttemptSummary, b: AttemptSummary): number {
 
 /**
  * Skuteczność powtórek: spośród pytań z błędną PIERWSZĄ odpowiedzią,
- * do których uczeń wrócił, jaka część DRUGIEGO podejścia była poprawna.
+ * do których wrócono, jaka część DRUGIEGO podejścia była poprawna.
  */
 export function computeProgress(
   attempts: readonly AttemptSummary[],

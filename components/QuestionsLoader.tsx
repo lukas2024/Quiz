@@ -6,13 +6,23 @@ import { useAuth } from "@/components/AuthProvider";
 import StudySession from "@/components/StudySession";
 import { fetchAttempts, saveAttempt } from "@/lib/attempts";
 import { fetchQuestions } from "@/lib/questions";
-import { orderQuestionsForSession, type AttemptSummary } from "@/lib/review";
+import {
+  findLastWrongIds,
+  orderQuestionsForSession,
+  type AttemptSummary,
+} from "@/lib/review";
 import type { AnswerRecord, Question } from "@/types/question";
 
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; questions: Question[]; historyFailed: boolean };
+  | {
+      status: "ready";
+      questions: Question[];
+      /** Pytania z błędną ostatnią odpowiedzią w poprzednich sesjach. */
+      dueIds: Set<string>;
+      historyFailed: boolean;
+    };
 
 /** Historia odpowiedzi albo null, gdy odczyt się nie udał. */
 async function fetchHistory(uid: string | null): Promise<AttemptSummary[] | null> {
@@ -70,6 +80,7 @@ export default function QuestionsLoader() {
           questions: history
             ? orderQuestionsForSession(questions, history)
             : questions,
+          dueIds: history ? findLastWrongIds(history) : new Set(),
           historyFailed: history === null,
         });
       })
@@ -139,6 +150,7 @@ export default function QuestionsLoader() {
           <StudySession
             key={reloadKey}
             questions={loadState.questions}
+            dueIds={loadState.dueIds}
             onAnswer={handleAnswer}
             onRestart={reload}
           />

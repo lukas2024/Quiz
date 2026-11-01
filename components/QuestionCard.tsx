@@ -8,6 +8,7 @@ type QuestionCardProps = {
   questionNumber: number;
   totalQuestions: number;
   isRepeat?: boolean;
+  dueFromHistory?: boolean;
   selectedIndex: number | null;
   isLast: boolean;
   onSelect: (index: number) => void;
@@ -33,6 +34,7 @@ export default function QuestionCard({
   questionNumber,
   totalQuestions,
   isRepeat = false,
+  dueFromHistory = false,
   selectedIndex,
   isLast,
   onSelect,
@@ -86,19 +88,19 @@ export default function QuestionCard({
 
   const progressPercent = Math.round((questionNumber / totalQuestions) * 100);
 
+  // Powtórka w sesji ma pierwszeństwo – to bliższy powód.
+  const repeatLabel = isRepeat
+    ? "Powtórka – poprzednia odpowiedź na to pytanie była błędna"
+    : dueFromHistory
+      ? "Do powtórki – ostatnia odpowiedź była błędna"
+      : null;
+
   return (
     <section className="flex w-full flex-col gap-3 sm:gap-4">
       <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-3 text-sm">
-          <p className="font-medium text-zinc-500 dark:text-zinc-400">
-            {question.subject}
-          </p>
-          {isRepeat && (
-            <span className="shrink-0 font-semibold text-amber-700 dark:text-amber-400">
-              Powtórka
-            </span>
-          )}
-        </div>
+        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+          {question.subject}
+        </p>
         <div className="flex items-center gap-3">
           <div
             role="progressbar"
@@ -118,6 +120,13 @@ export default function QuestionCard({
           </span>
         </div>
       </div>
+
+      {repeatLabel && (
+        <p className="inline-flex items-center gap-1.5 self-start rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-sm font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+          <span aria-hidden="true">↻</span>
+          {repeatLabel}
+        </p>
+      )}
 
       <h2 className="text-lg font-semibold sm:text-xl">{question.text}</h2>
 
