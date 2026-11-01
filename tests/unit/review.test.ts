@@ -7,6 +7,7 @@ import {
   orderQuestionsForSession,
   type AttemptSummary,
   type SessionAnswer,
+  type SessionItem,
 } from "../../lib/review";
 import type { Question } from "../../types/question";
 
@@ -124,13 +125,19 @@ describe("enqueueRetry", () => {
     expect(enqueueRetry(queue, queue[1], true)).toEqual(queue);
   });
 
-  it("13. błąd w powtórce -> pytanie nie wraca drugi raz", () => {
+  it("13. błąd w powtórce -> pytanie wraca jeszcze raz na koniec", () => {
     const first = createQueue(QUESTIONS);
     const withRepeat = enqueueRetry(first, first[1], false);
     const afterRepeat = enqueueRetry(withRepeat, withRepeat[5], false);
 
-    expect(afterRepeat).toEqual(withRepeat);
-    expect(afterRepeat.filter((item) => item.question.id === "hp-2")).toHaveLength(2);
+    expect(afterRepeat).toHaveLength(7);
+    expect(afterRepeat.slice(0, 6)).toEqual(withRepeat);
+    expect(afterRepeat[6]).toEqual({
+      question: QUESTIONS[1],
+      isRepeat: true,
+      dueFromHistory: false,
+    });
+    expect(afterRepeat.filter((item) => item.question.id === "hp-2")).toHaveLength(3);
   });
 
   it("14. błędy w hp-1, potem hp-3 -> powtórki w kolejności błędów", () => {
@@ -240,5 +247,74 @@ describe("createQueue i enqueueRetry z dueFromHistory", () => {
       dueFromHistory: false,
     });
     expect(result[1].dueFromHistory).toBe(true);
+  });
+});
+
+describe("powtórki aż do poprawnej odpowiedzi", () => {
+  const label = (queue: SessionItem[]) =>
+    queue.map((item) => `${item.question.id}${item.isRepeat ? "*" : ""}`);
+
+  /**
+   * Symulacja sesji jak w StudySession: idzie po kolejce, aż się skończy.
+   * script[id] = kolejne odpowiedzi na to pytanie (brak/koniec listy = poprawna).
+   */
+  function simulate(script: Record<string, boolean[]>) {
+    let queue = createQueue(QUESTIONS);
+    const answers: SessionAnswer[] = [];
+    const used: Record<string, number> = {};
+
+    for (let position = 0; position < queue.length; position++) {
+      if (position > 100) throw new Error("Sesja się nie kończy");
+      const item = queue[position];
+      const id = item.question.id;
+      const n = used[id] ?? 0;
+      used[id] = n + 1;
+      const isCorrect = script[id]?.[n] ?? true;
+      answers.push({ questionId: id, isCorrect, isRepeat: item.isRepeat });
+      queue = enqueueRetry(queue, item, isCorrect);
+    }
+    return { queue, answers };
+  }
+
+  it("25. dwa błędy z rzędu w tym samym pytaniu -> dwie powtórki", () => {
+    const queue = createQueue(QUESTIONS);
+    const afterFirst = enqueueRetry(queue, queue[1], false);
+    const afterSecond = enqueueRetry(afterFirst, afterFirst[5], false);
+
+    expect(label(afterSecond)).toEqual([
+      "hp-1", "hp-2", "hp-3", "hp-4", "hp-5", "hp-2*", "hp-2*",
+    ]);
+    expect(enqueueRetry(afterSecond, afterSecond[6], true)).toEqual(afterSecond);
+  });
+
+  it("26. kilka pytań z powtórkami naraz -> kolejność błędów zachowana", () => {
+    let queue = createQueue(QUESTIONS);
+    queue = enqueueRetry(queue, queue[0], false); // hp-1 źle
+    queue = enqueueRetry(queue, queue[2], false); // hp-3 źle
+    queue = enqueueRetry(queue, queue[5], false); // powtórka hp-1 znowu źle
+    queue = enqueueRetry(queue, queue[6], true); // powtórka hp-3 dobrze
+
+    expect(label(queue)).toEqual([
+      "hp-1", "hp-2", "hp-3", "hp-4", "hp-5", "hp-1*", "hp-3*", "hp-1*",
+    ]);
+  });
+
+  it("27. sesja kończy się dopiero po poprawnych odpowiedziach na wszystkie", () => {
+    const { queue, answers } = simulate({
+      "hp-2": [false, false, true],
+      "hp-4": [false, true],
+    });
+
+    expect(answers).toHaveLength(8);
+    expect(label(queue).slice(5)).toEqual(["hp-2*", "hp-4*", "hp-2*"]);
+
+    const lastAnswer = new Map(answers.map((a) => [a.questionId, a.isCorrect]));
+    expect(lastAnswer.size).toBe(5);
+    expect([...lastAnswer.values()].every(Boolean)).toBe(true);
+
+    expect(firstAttemptScore(answers, QUESTIONS.length)).toEqual({
+      correct: 3,
+      total: 5,
+    });
   });
 });

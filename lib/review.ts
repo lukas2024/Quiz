@@ -85,15 +85,16 @@ export function createQueue(
 }
 
 /**
- * Ta sama sesja: błąd przy pierwszym podejściu dopisuje pytanie raz na koniec
- * kolejki jako powtórkę. Poprawna odpowiedź albo błąd w powtórce nic nie zmienia.
+ * Ta sama sesja: każdy błąd (także w powtórce) dopisuje pytanie na koniec
+ * kolejki jako powtórkę, więc pytanie wraca, aż padnie poprawna odpowiedź.
+ * Poprawna odpowiedź nic nie zmienia. Sesja kończy się wraz z kolejką.
  */
 export function enqueueRetry(
   queue: readonly SessionItem[],
   current: SessionItem,
   isCorrect: boolean,
 ): SessionItem[] {
-  if (isCorrect || current.isRepeat) return [...queue];
+  if (isCorrect) return [...queue];
   return [
     ...queue,
     { question: current.question, isRepeat: true, dueFromHistory: false },
