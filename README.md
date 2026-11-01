@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fiszki z powtórkami
 
-## Getting Started
+Aplikacja do nauki historii Polski z fiszek, która wraca do pytań z błędną odpowiedzią, aż padnie dobra odpowiedź.
 
-First, run the development server:
+Aplikacja: https://fiszki-5gd2.vercel.app/
+
+## Problem i dla kogo
+
+Dla ucznia, który powtarza historię Polski. Przy zwykłych fiszkach łatwo przejść dalej po błędzie i nigdy do niego nie wrócić. Tutaj pytanie z błędną odpowiedzią wraca, dopóki uczeń nie odpowie dobrze, a po błędzie aplikacja nie podpowiada poprawnej odpowiedzi.
+
+## Jak działa
+
+- Logowanie przez konto Google.
+- Sesja nauki z pytaniami zapisanymi w Firestore (obecnie 5 pytań).
+- Pytanie z błędną odpowiedzią wraca na koniec kolejki, aż padnie dobra odpowiedź. Sesja kończy się, gdy na wszystkie pytania padła dobra odpowiedź.
+- Wynik sesji liczy tylko pierwsze podejście do każdego pytania, więc powtórki go nie zawyżają.
+- W kolejnej sesji najpierw pojawiają się pytania, na które ostatnia odpowiedź była błędna, oznaczone plakietką „Do powtórki”.
+- Strona Postępy pokazuje metrykę opisaną niżej.
+
+## Metryka: Skuteczność powtórek
+
+Odsetek pytań z błędną pierwszą odpowiedzią, na które przy następnej próbie padła dobra odpowiedź. Liczone są tylko pytania, do których już wrócono; wynik ma postać np. „75% (3 z 4)”.
+
+Ograniczenie: następną próbą jest też powtórka w tej samej sesji, kilka minut po błędzie, więc metryka mierzy głównie pamięć krótkotrwałą. Możliwa poprawka (zapisana w [DECISIONS.md](DECISIONS.md)): liczyć drugie podejście dopiero po minimalnym odstępie czasu albo w kolejnej sesji.
+
+## Stack
+
+- Next.js (App Router), TypeScript, Tailwind CSS
+- Firebase Authentication (Google) i Cloud Firestore
+- Vercel
+- Testy: vitest (logika powtórek i metryki) oraz emulator Firestore (reguły bezpieczeństwa z `firestore.rules`)
+
+## Praca z agentem
+
+Aplikację zbudowałem z Claude Code krok po kroku: najpierw plan, potem akceptacja, potem kod. Każdą zmianę przeglądałem w VS Code przed commitem. Decyzje, propozycje agenta i poprawione błędy są w [DECISIONS.md](DECISIONS.md). Trzy przykłady:
+
+- **Krok 4, reguła `isCorrect`.** Przy zapisie odpowiedzi reguły Firestore pobierają dokument pytania (`get` na `/questions/{id}`) i sprawdzają, czy pole `isCorrect` jest zgodne z tym, czy `selectedIndex` równa się `correctIndex` pytania. Bez tego dałoby się z konsoli przeglądarki zapisać fałszywie poprawne odpowiedzi i zawyżyć metrykę. Test w emulatorze wykrył celowo usuniętą regułę.
+- **Kroki 1 i 3, `git add` bez zgody.** Agent od razu dodawał pliki i robił commit, zanim przejrzałem listę zmian. Odrzuciłem to i dopisałem do `CLAUDE.md` regułę: gdy proszę o git status, agent pokazuje tylko status i czeka na akceptację listy.
+- **Krok 7b, bez podpowiedzi po błędzie.** Po błędnej odpowiedzi aplikacja nie pokazuje poprawnej (usunąłem zielone podświetlenie i tekst z odpowiedzią), a pytanie wraca do skutku. Uczeń ma sobie przypomnieć odpowiedź, a nie kliknąć zapamiętaną podpowiedź.
+
+## Uruchomienie lokalne
+
+Wymagania:
+
+- Node.js 20.9 lub nowszy
+- projekt Firebase z włączonym logowaniem Google i bazą Firestore: kolekcja `questions` z pytaniami i reguły z pliku `firestore.rules`
+- do testów reguł: Java 21 lub nowsza (wymaga jej emulator Firestore)
+
+Kroki:
+
+```bash
+npm install
+cp .env.local.example .env.local
+```
+
+W `.env.local` wpisz wartości konfiguracji ze swojego projektu Firebase (Ustawienia projektu → Twoje aplikacje). Plik `.env.local` jest ignorowany przez git.
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Aplikacja działa pod adresem http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Testy:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run test:unit    # logika powtórek i metryki (vitest)
+npm run test:rules   # reguły Firestore w emulatorze, projekt demo-fiszki
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Testy reguł działają tylko na lokalnym emulatorze, nigdy na prawdziwej bazie.
