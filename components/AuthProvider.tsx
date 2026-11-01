@@ -12,8 +12,10 @@ import {
 import { FirebaseError } from "firebase/app";
 import {
   GoogleAuthProvider,
+  getRedirectResult,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
@@ -68,7 +70,24 @@ function signInErrorMessage(code: string): string {
 const IGNORED_SIGN_IN_ERRORS = new Set([
   "auth/popup-closed-by-user",
   "auth/cancelled-popup-request",
+  "auth/redirect-cancelled-by-user",
+  "auth/redirect-operation-pending",
 ]);
+
+/** Komunikat do pokazania albo null, gdy błąd pomijamy (np. anulowanie). */
+function signInFailureMessage(error: unknown): string | null {
+  if (error instanceof FirebaseError) {
+    if (IGNORED_SIGN_IN_ERRORS.has(error.code)) return null;
+    return signInErrorMessage(error.code);
+  }
+  return "Logowanie nie powiodło się.";
+}
+
+// Na telefonach i tabletach popup otwiera nową kartę, która w części
+// przeglądarek (Chrome na iOS) się wywraca – tam używamy przekierowania.
+function prefersRedirect(): boolean {
+  return window.matchMedia("(pointer: coarse)").matches;
+}
 
 // Zmienne NEXT_PUBLIC_* są wpisane przy buildzie, więc wynik jest stały
 // i taki sam na serwerze i w przeglądarce.
@@ -93,17 +112,35 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
+  // Powrót z logowania przez przekierowanie: tu odbieramy tylko błędy.
+  // Zalogowanego użytkownika ustawia wyłącznie onAuthStateChanged.
+  useEffect(() => {
+    if (!CONFIG_OK) return;
+    let cancelled = false;
+    getRedirectResult(getFirebaseAuth()).catch((error: unknown) => {
+      if (cancelled) return;
+      const message = signInFailureMessage(error);
+      if (message) setActionError(message);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const signIn = useCallback(async () => {
     setActionError(null);
+    const auth = getFirebaseAuth();
+    const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(getFirebaseAuth(), new GoogleAuthProvider());
-    } catch (error) {
-      if (error instanceof FirebaseError) {
-        if (IGNORED_SIGN_IN_ERRORS.has(error.code)) return;
-        setActionError(signInErrorMessage(error.code));
+      if (prefersRedirect()) {
+        // Strona przechodzi do Google; wynik odbiera getRedirectResult po powrocie.
+        await signInWithRedirect(auth, provider);
       } else {
-        setActionError("Logowanie nie powiodło się.");
+        await signInWithPopup(auth, provider);
       }
+    } catch (error) {
+      const message = signInFailureMessage(error);
+      if (message) setActionError(message);
     }
   }, []);
 
