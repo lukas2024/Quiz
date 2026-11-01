@@ -27,7 +27,7 @@ export default function LoginScreen({ onSignIn, errorMessage }: LoginScreenProps
       <div className="flex w-full max-w-sm flex-col items-center rounded-2xl bg-white/90 px-6 py-10 text-center text-zinc-900 shadow-xl backdrop-blur-md dark:bg-zinc-900/85 dark:text-zinc-50">
         <h1 className="text-4xl font-bold">Fiszki</h1>
         <p className="mt-2 text-base text-zinc-600 dark:text-zinc-300">
-          Ucz się historii Polski
+          Ucz się historii Polski szybko i efektywnie!
         </p>
         <button
           type="button"

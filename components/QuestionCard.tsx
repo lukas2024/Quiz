@@ -88,35 +88,37 @@ export default function QuestionCard({
 
   return (
     <section className="flex w-full flex-col gap-3 sm:gap-4">
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-baseline justify-between text-sm text-zinc-500 dark:text-zinc-400">
-          <span>
-            {questionNumber} z {totalQuestions}
-          </span>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between gap-3 text-sm">
+          <p className="font-medium text-zinc-500 dark:text-zinc-400">
+            {question.subject}
+          </p>
           {isRepeat && (
-            <span className="font-semibold text-amber-700 dark:text-amber-400">
+            <span className="shrink-0 font-semibold text-amber-700 dark:text-amber-400">
               Powtórka
             </span>
           )}
         </div>
-        <div
-          role="progressbar"
-          aria-label="Postęp sesji"
-          aria-valuemin={0}
-          aria-valuemax={totalQuestions}
-          aria-valuenow={questionNumber}
-          className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
-        >
+        <div className="flex items-center gap-3">
           <div
-            className="h-full rounded-full bg-zinc-900 transition-[width] dark:bg-zinc-100"
-            style={{ width: `${progressPercent}%` }}
-          />
+            role="progressbar"
+            aria-label="Postęp sesji"
+            aria-valuemin={0}
+            aria-valuemax={totalQuestions}
+            aria-valuenow={questionNumber}
+            className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
+          >
+            <div
+              className="h-full rounded-full bg-zinc-900 transition-[width] dark:bg-zinc-100"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <span className="shrink-0 text-sm tabular-nums text-zinc-500 dark:text-zinc-400">
+            {questionNumber} z {totalQuestions}
+          </span>
         </div>
       </div>
 
-      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-        {question.subject}
-      </p>
       <h2 className="text-lg font-semibold sm:text-xl">{question.text}</h2>
 
       <ul className="flex flex-col gap-2">
