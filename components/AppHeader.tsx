@@ -21,7 +21,7 @@ export default function AppHeader({ userName, onSignOut }: AppHeaderProps) {
       <div className="mx-auto flex h-14 w-full max-w-[640px] items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-5">
           <Link href="/" className="text-lg font-bold">
-            Fiszki
+            Quiz z historii
           </Link>
           <nav aria-label="Główna nawigacja">
             <ul className="flex items-center gap-4 text-sm">

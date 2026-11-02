@@ -1,12 +1,12 @@
-# Fiszki z powtórkami
+# Quiz z powtórkami
 
-Aplikacja do nauki historii Polski z fiszek, która wraca do pytań z błędną odpowiedzią, aż padnie dobra odpowiedź.
+Quiz jednokrotnego wyboru z historii Polski, który wraca do pytań z błędną odpowiedzią, aż padnie dobra odpowiedź.
 
 Aplikacja: https://fiszki-5gd2.vercel.app/
 
 ## Problem i dla kogo
 
-Dla ucznia, który powtarza historię Polski. Przy zwykłych fiszkach łatwo przejść dalej po błędzie i nigdy do niego nie wrócić. Tutaj pytanie z błędną odpowiedzią wraca, dopóki uczeń nie odpowie dobrze, a po błędzie aplikacja nie podpowiada poprawnej odpowiedzi.
+Dla ucznia, który powtarza historię Polski. Przy zwykłym quizie łatwo przejść dalej po błędzie i nigdy do niego nie wrócić. Tutaj pytanie z błędną odpowiedzią wraca, dopóki uczeń nie odpowie dobrze, a po błędzie aplikacja nie podpowiada poprawnej odpowiedzi.
 
 ## Jak działa
 

@@ -3,7 +3,7 @@ import AuthGate from "@/components/AuthGate";
 import ProgressView from "@/components/ProgressView";
 
 export const metadata: Metadata = {
-  title: "Postępy – Fiszki",
+  title: "Postępy – Quiz z historii Polski",
 };
 
 export default function ProgressPage() {

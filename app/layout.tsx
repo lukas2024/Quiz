@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fiszki",
-  description: "Nauka z fiszek z powtórkami",
+  title: "Quiz z historii Polski",
+  description: "Quiz z historii Polski z powtórkami",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
