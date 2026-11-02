@@ -2,7 +2,7 @@
 
 Quiz jednokrotnego wyboru z historii Polski, który wraca do pytań z błędną odpowiedzią, aż padnie dobra odpowiedź.
 
-Aplikacja: https://fiszki-5gd2.vercel.app/
+Aplikacja: https://quiz-5gd2.vercel.app
 
 ## Problem i dla kogo
 
