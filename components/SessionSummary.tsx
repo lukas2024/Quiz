@@ -11,7 +11,7 @@ export default function SessionSummary({
 }: SessionSummaryProps) {
   return (
     <section className="flex flex-col items-center gap-4">
-      <h2 className="text-xl font-semibold">Koniec sesji</h2>
+      <h2 className="text-xl font-semibold">Koniec quizu</h2>
       <p className="text-3xl font-bold">
         Wynik: {correctCount}/{totalQuestions}
       </p>

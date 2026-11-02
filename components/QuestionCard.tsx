@@ -105,7 +105,7 @@ export default function QuestionCard({
         <div className="flex items-center gap-3">
           <div
             role="progressbar"
-            aria-label="Postęp sesji"
+            aria-label="Postęp quizu"
             aria-valuemin={0}
             aria-valuemax={totalQuestions}
             aria-valuenow={questionNumber}
@@ -170,7 +170,7 @@ export default function QuestionCard({
             role="status"
             className={isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}
           >
-            {isCorrect ? "Dobrze!" : "Źle – to pytanie wróci na końcu sesji"}
+            {isCorrect ? "Dobrze!" : "Źle – to pytanie wróci na końcu quizu"}
           </p>
           <button
             type="button"
